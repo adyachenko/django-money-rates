@@ -22,7 +22,7 @@ from django.utils import importlib, six
 USER_SETTINGS = getattr(settings, 'DJANGO_MONEY_RATES', None)
 
 DEFAULTS = {
-    'DEFAULT_BACKEND': 'djmoney_rates.backends.OpenExchangeBackend',
+    'DEFAULT_BACKEND': 'djmoney_rates.backends.CBRBackend',
 
     'OPENEXCHANGE_URL': 'http://openexchangerates.org/api/latest.json',
     'OPENEXCHANGE_APP_ID': '',

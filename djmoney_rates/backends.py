@@ -5,6 +5,7 @@ import json
 
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import six
+from django.core import serializers
 
 from .compat import urlopen
 from .exceptions import RateBackendError
@@ -53,7 +54,9 @@ class BaseRateBackend(object):
         source.base_currency = self.get_base_currency()
         source.save()
 
+        # logger.debug('Successfully updated rates for')
         for currency, value in six.iteritems(self.get_rates()):
+
             try:
                 rate = Rate.objects.get(source=source, currency=currency)
             except Rate.DoesNotExist:
@@ -96,3 +99,32 @@ class OpenExchangeBackend(BaseRateBackend):
 
     def get_base_currency(self):
         return money_rates_settings.OPENEXCHANGE_BASE_CURRENCY
+
+class CBRBackend(BaseRateBackend):
+    source_name = "cbr.ru"
+
+    def __init__(self):
+        self.url = "http://www.cbr.ru/scripts/XML_daily.asp"
+
+    def get_rates(self):
+        try:
+            logger.debug("Connecting to url %s" % self.url)
+            data = urlopen(self.url).read()
+            import xml.etree.cElementTree as etree
+            xmlDocTree = etree.XML(data)
+            currencies = {}
+            for currency in xmlDocTree.iter('Valute'):
+                currencies[currency[1].text] = float(currency[4].text.replace(',','.'))
+
+            # data_des = serializers.deserialize('xml', data['valuta'])
+
+            # return json.loads()
+            return currencies
+
+        except Exception as e:
+            logger.exception("Error retrieving data from %s", self.url)
+            raise RateBackendError("Error retrieving rates: %s" % e)
+
+    def get_base_currency(self):
+        return 'RUB'
+        # return money_rates_settings.OPENEXCHANGE_BASE_CURRENCY
